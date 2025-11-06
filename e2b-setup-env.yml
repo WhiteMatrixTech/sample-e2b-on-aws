@@ -580,7 +580,7 @@ Resources:
     Properties:
       InstanceType: !If
         - IsX64
-        - c7i.xlarge
+        - m7i.xlarge
         - c7g.xlarge
       KeyName: !Ref KeyName
       IamInstanceProfile: !Ref EC2InstanceProfile
@@ -660,7 +660,7 @@ Resources:
             - |
               # Create directory for E2B infrastructure code
               mkdir -p /opt/infra/ && cd /opt/infra/
-              git clone https://github.com/aws-samples/sample-e2b-on-aws.git && cd sample-e2b-on-aws
+              git clone https://github.com/WhiteMatrixTech/sample-e2b-on-aws.git && cd sample-e2b-on-aws && git checkout whitematrix-e2b
             - !Sub |
               # Initialize Configuration
               touch /tmp/e2b.log
