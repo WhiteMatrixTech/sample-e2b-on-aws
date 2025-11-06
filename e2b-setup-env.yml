@@ -150,6 +150,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   VPC:
     Type: AWS::EC2::VPC
+    DeletionPolicy: Delete
     Properties:
       CidrBlock: !Ref VpcBlock
       EnableDnsSupport: true
@@ -160,6 +161,7 @@ Resources:
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
+    DeletionPolicy: Delete
     Properties:
       Tags:
         - Key: Name
@@ -167,6 +169,7 @@ Resources:
 
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
+    DeletionPolicy: Delete
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
@@ -174,6 +177,7 @@ Resources:
   # Public Subnet in AZ1 - Network segment with direct internet access in first availability zone
   PublicSubnet1:
     Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
     Metadata:
       Comment: Public subnet in first availability zone for internet-facing resources
     Properties:
@@ -193,6 +197,7 @@ Resources:
   # Public Subnet in AZ2 - Network segment with direct internet access in second availability zone
   PublicSubnet2:
     Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
     Metadata:
       Comment: Public subnet in second availability zone for internet-facing resources
     Properties:
@@ -212,6 +217,7 @@ Resources:
   # Private Subnet in AZ1 - Isolated network segment in first availability zone for backend services
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
     Metadata:
       Comment: Private subnet in first availability zone for secure resources
     Properties:
@@ -230,6 +236,7 @@ Resources:
   # Private Subnet in AZ2 - Isolated network segment in second availability zone for backend services
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
+    DeletionPolicy: Delete
     Metadata:
       Comment: Private subnet in second availability zone for secure resources
     Properties:
@@ -248,6 +255,7 @@ Resources:
   # Route Table for Public Subnets - Defines routing rules for internet-accessible subnets
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
+    DeletionPolicy: Delete
     Properties:
       VpcId: !Ref VPC
       Tags:
@@ -257,6 +265,7 @@ Resources:
   # Route Table for Private Subnets - Defines routing rules for internal-only subnets
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
+    DeletionPolicy: Delete
     Properties:
       VpcId: !Ref VPC
       Tags:
@@ -266,6 +275,7 @@ Resources:
   # Default Route to Internet Gateway - Enables outbound internet access for public subnets
   PublicRoute:
     DependsOn: VPCGatewayAttachment
+    DeletionPolicy: Delete
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PublicRouteTable
@@ -275,24 +285,28 @@ Resources:
   # Associate Route Tables with Subnets - Links routing rules to appropriate network segments
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
     Properties:
       SubnetId: !Ref PublicSubnet1
       RouteTableId: !Ref PublicRouteTable
 
   PublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
     Properties:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
     Properties:
       SubnetId: !Ref PrivateSubnet1
       RouteTableId: !Ref PrivateRouteTable
 
   PrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
+    DeletionPolicy: Delete
     Properties:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
@@ -300,6 +314,7 @@ Resources:
   # S3 VPC Endpoint - Provides private access to S3 without traversing the public internet
   S3VPCEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    DeletionPolicy: Delete
     Properties:
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
       VpcId: !Ref VPC
@@ -313,6 +328,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
     Properties:
       GroupDescription: Security group allowing SSH connections to the bastion host from specified IP ranges
       VpcId: !Ref VPC
@@ -330,6 +346,7 @@ Resources:
 
   DBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
     Properties:
       GroupDescription: Security group controlling access to the PostgreSQL database (port 5432)
       SecurityGroupIngress:
@@ -347,6 +364,7 @@ Resources:
 
   RedisSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    DeletionPolicy: Delete
     Properties:
       GroupDescription: Security group controlling access to the Redis cache (port 6379)
       SecurityGroupIngress:
@@ -367,6 +385,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   EC2ServiceRole:
     Type: AWS::IAM::Role
+    DeletionPolicy: Delete
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -384,6 +403,7 @@ Resources:
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
+    DeletionPolicy: Delete
     Properties:
       Path: /
       Roles:
@@ -394,6 +414,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   DBPasswordParameter:
     Type: AWS::SSM::Parameter
+    DeletionPolicy: Delete
     Properties:
       Name: !Sub "e2b-${AWS::StackName}-db-password"
       Type: String
@@ -405,6 +426,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   WildcardCertificate:
     Type: AWS::CertificateManager::Certificate
+    DeletionPolicy: Delete
     Properties:
       DomainName: !Sub "*.${BaseDomain}"
       ValidationMethod: DNS
@@ -417,6 +439,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   TerraformS3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
     Properties:
       BucketName: !Sub "terraform-${AWS::StackName}-${AWS::Region}-${AWS::AccountId}"
       VersioningConfiguration:
@@ -437,6 +460,7 @@ Resources:
 
   SoftwareS3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
     Properties:
       BucketName: !Sub "software-${AWS::StackName}-${AWS::Region}-${AWS::AccountId}"
       VersioningConfiguration:
@@ -460,6 +484,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
+    DeletionPolicy: Delete
     Properties:
       DBSubnetGroupDescription: Subnet group defining which private subnets can host the PostgreSQL database
       SubnetIds:
@@ -471,6 +496,7 @@ Resources:
 
   AuroraCluster:
     Type: AWS::RDS::DBCluster
+    DeletionPolicy: Delete
     Properties:
       Engine: aurora-postgresql
       EngineVersion: 16.8
@@ -498,6 +524,7 @@ Resources:
 
   AuroraInstance:
     Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
     Properties:
       Engine: aurora-postgresql
       DBInstanceIdentifier:
@@ -517,6 +544,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   RedisSubnetGroup:
     Type: AWS::ElastiCache::SubnetGroup
+    DeletionPolicy: Delete
     Properties:
       Description: Subnet group for Redis cache
       SubnetIds:
@@ -528,6 +556,7 @@ Resources:
 
   RedisServerless:
     Type: AWS::ElastiCache::ServerlessCache
+    DeletionPolicy: Delete
     Properties:
       Engine: redis
       ServerlessCacheName: !Sub "${AWS::StackName}-redis"
@@ -545,6 +574,7 @@ Resources:
   # ------------------------------------------------------------------------------------------------
   BastionInstance:
     Type: AWS::EC2::Instance
+    DeletionPolicy: Delete
     Metadata:
       Comment: "Terraform Bastion Host for deploying and managing E2B infrastructure components"
     Properties:
