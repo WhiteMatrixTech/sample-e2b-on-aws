@@ -527,23 +527,6 @@ resource "aws_efs_mount_target" "e2b-efs" {
   security_groups = [aws_security_group.efs_sg.id]
 }
 
-# Launch Template
-data "template_file" "efs_user_data" {
-  template = <<-EOF
-    #!/bin/bash
-    yum install -y amazon-efs-utils
-    mkdir -p /mnt/efs
-    mount -t efs -o tls ${efs_id}:/ /mnt/efs
-
-    # 自动挂载配置（重启后仍有效）
-    echo "${efs_id}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
-  EOF
-
-  vars = {
-    efs_id = aws_efs_file_system.e2b-efs.id
-  }
-}
-
 # Security group for client instances
 resource "aws_security_group" "client_sg" {
   name        = "${var.prefix}-client-sg"
@@ -588,6 +571,39 @@ resource "aws_security_group" "client_sg" {
       Name = "${var.prefix}-client-sg"
     }
   )
+}
+
+locals {
+  init_efs_script = templatefile("${path.module}/scripts/init-efs.sh", {
+    EFS_ID = aws_efs_file_system.e2b-efs.id
+  })
+
+  # 渲染 start-client.sh
+  start_client_script = templatefile("${path.module}/scripts/start-client.sh", {
+    CLUSTER_TAG_NAME             = "client-cluster"
+    SCRIPTS_BUCKET               = aws_s3_bucket.setup_bucket.bucket
+    FC_KERNELS_BUCKET_NAME       = aws_s3_bucket.fc_kernels_bucket.bucket
+    FC_VERSIONS_BUCKET_NAME      = aws_s3_bucket.fc_versions_bucket.bucket
+    FC_ENV_PIPELINE_BUCKET_NAME  = aws_s3_bucket.fc_env_pipeline_bucket.bucket
+    DOCKER_CONTEXTS_BUCKET_NAME  = aws_s3_bucket.docker_contexts_bucket.bucket
+    AWS_REGION                   = local.aws_region
+    AWS_ACCOUNT_ID               = local.account_id
+    NOMAD_TOKEN                  = aws_secretsmanager_secret_version.nomad_acl_token.secret_string
+    CONSUL_TOKEN                 = aws_secretsmanager_secret_version.consul_acl_token.secret_string
+    RUN_CONSUL_FILE_HASH         = local.file_hash["scripts/run-consul.sh"]
+    RUN_NOMAD_FILE_HASH          = local.file_hash["scripts/run-nomad.sh"]
+    CONSUL_GOSSIP_ENCRYPTION_KEY = aws_secretsmanager_secret_version.consul_gossip_encryption_key.secret_string
+    CONSUL_DNS_REQUEST_TOKEN     = aws_secretsmanager_secret_version.consul_dns_request_token.secret_string
+  })
+}
+
+data "template_file" "merged_client_data" {
+  template = file("${path.module}/templates/client_user_data.tpl")
+
+  vars = {
+    init_script = local.init_efs_script
+    main_script = local.start_client_script
+  }
 }
 
 # Create client cluster instances in an Auto Scaling Group
@@ -635,24 +651,7 @@ resource "aws_launch_template" "client" {
     security_groups             = [aws_security_group.client_sg.id]
   }
 
-  user_data = base64encode(templatefile("${path.module}/scripts/start-client.sh", {
-    CLUSTER_TAG_NAME             = "client-cluster"
-    SCRIPTS_BUCKET               = aws_s3_bucket.setup_bucket.bucket
-    FC_KERNELS_BUCKET_NAME       = aws_s3_bucket.fc_kernels_bucket.bucket
-    FC_VERSIONS_BUCKET_NAME      = aws_s3_bucket.fc_versions_bucket.bucket
-    FC_ENV_PIPELINE_BUCKET_NAME  = aws_s3_bucket.fc_env_pipeline_bucket.bucket
-    DOCKER_CONTEXTS_BUCKET_NAME  = aws_s3_bucket.docker_contexts_bucket.bucket
-    AWS_REGION                   = local.aws_region
-    AWS_ACCOUNT_ID               = local.account_id
-    NOMAD_TOKEN                  = aws_secretsmanager_secret_version.nomad_acl_token.secret_string
-    CONSUL_TOKEN                 = aws_secretsmanager_secret_version.consul_acl_token.secret_string
-    RUN_CONSUL_FILE_HASH         = local.file_hash["scripts/run-consul.sh"]
-    RUN_NOMAD_FILE_HASH          = local.file_hash["scripts/run-nomad.sh"]
-    CONSUL_GOSSIP_ENCRYPTION_KEY = aws_secretsmanager_secret_version.consul_gossip_encryption_key.secret_string
-    CONSUL_DNS_REQUEST_TOKEN     = aws_secretsmanager_secret_version.consul_dns_request_token.secret_string
-  }))
-
-  user_data = base64encode(data.template_file.efs_user_data.rendered)
+  user_data = base64encode(data.template_file.merged_client_data.rendered)
 
   tag_specifications {
     resource_type = "instance"
