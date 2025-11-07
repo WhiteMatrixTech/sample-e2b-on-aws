@@ -488,6 +488,62 @@ resource "aws_autoscaling_group" "server" {
   }
 }
 
+# create efs file system
+resource "aws_efs_file_system" "e2b-efs" {
+  creation_token = "e2b-efs"
+  lifecycle_policy {
+    transition_to_ia = "AFTER_30_DAYS"
+  }
+  tags = {
+    Name = "e2b-efs"
+  }
+}
+
+# Security group for NFS
+resource "aws_security_group" "efs_sg" {
+  name        = "efs-sg"
+  description = "Allow NFS"
+  vpc_id      = "var.VPC.id"
+
+  ingress {
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Create an EFS mount point
+resource "aws_efs_mount_target" "e2b-efs" {
+  file_system_id  = aws_efs_file_system.e2b-efs.id
+  subnet_id       = var.VPC.public_subnets
+  security_groups = [aws_security_group.efs_sg.id]
+}
+
+# Launch Template
+data "template_file" "efs_user_data" {
+  template = <<-EOF
+    #!/bin/bash
+    yum install -y amazon-efs-utils
+    mkdir -p /mnt/efs
+    mount -t efs -o tls ${efs_id}:/ /mnt/efs
+
+    # 自动挂载配置（重启后仍有效）
+    echo "${efs_id}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+  EOF
+
+  vars = {
+    efs_id = aws_efs_file_system.e2b-efs.id
+  }
+}
+
 # Security group for client instances
 resource "aws_security_group" "client_sg" {
   name        = "${var.prefix}-client-sg"
@@ -595,6 +651,8 @@ resource "aws_launch_template" "client" {
     CONSUL_GOSSIP_ENCRYPTION_KEY = aws_secretsmanager_secret_version.consul_gossip_encryption_key.secret_string
     CONSUL_DNS_REQUEST_TOKEN     = aws_secretsmanager_secret_version.consul_dns_request_token.secret_string
   }))
+
+  user_data = base64encode(data.template_file.efs_user_data.rendered)
 
   tag_specifications {
     resource_type = "instance"

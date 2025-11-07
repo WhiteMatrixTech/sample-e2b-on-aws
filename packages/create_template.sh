@@ -84,8 +84,8 @@ RESPONSE=$(curl -s -X POST \
  \"startCmd\": \"$START_COMMAND\",
  \"dockerfile\": \"$DOCKERFILE\",
  \"alias\": \"test-$(date +%s)\",
- \"memoryMB\": 4096,
- \"cpuCount\": 4
+ \"memoryMB\": 2048,
+ \"cpuCount\": 2
  }")
 
  echo "Response: $RESPONSE"
