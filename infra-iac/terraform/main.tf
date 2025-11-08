@@ -503,7 +503,7 @@ resource "aws_efs_file_system" "e2b-efs" {
 resource "aws_security_group" "efs_sg" {
   name        = "efs-sg"
   description = "Allow NFS"
-  vpc_id      = "var.VPC.id"
+  vpc_id      = var.VPC.id
 
   ingress {
     from_port   = 2049
