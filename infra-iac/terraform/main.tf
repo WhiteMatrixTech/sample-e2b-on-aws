@@ -534,6 +534,47 @@ resource "aws_security_group" "client_sg" {
   )
 }
 
+# create efs file system
+resource "aws_efs_file_system" "e2b-efs" {
+  creation_token = "e2b-efs"
+  lifecycle_policy {
+    transition_to_ia = "AFTER_30_DAYS"
+  }
+  tags = {
+    Name = "e2b-efs"
+  }
+}
+
+# Security group for NFS
+resource "aws_security_group" "efs_sg" {
+  name        = "efs-sg"
+  description = "Allow NFS"
+  vpc_id      = var.VPC.id
+
+  ingress {
+    from_port   = 2049
+    to_port     = 2049
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.0.0/8"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Create an EFS mount point
+resource "aws_efs_mount_target" "e2b-efs" {
+  for_each = toset(var.VPC.public_subnets)
+
+  file_system_id  = aws_efs_file_system.e2b-efs.id
+  subnet_id       = each.value
+  security_groups = [aws_security_group.efs_sg.id]
+}
+
 # Create client cluster instances in an Auto Scaling Group
 resource "aws_launch_template" "client" {
   name_prefix            = "${var.prefix}-client-"
@@ -594,6 +635,7 @@ resource "aws_launch_template" "client" {
       RUN_NOMAD_FILE_HASH          = local.file_hash["scripts/run-nomad.sh"]
       CONSUL_GOSSIP_ENCRYPTION_KEY = aws_secretsmanager_secret_version.consul_gossip_encryption_key.secret_string
       CONSUL_DNS_REQUEST_TOKEN     = aws_secretsmanager_secret_version.consul_dns_request_token.secret_string
+      EFS_ID                       = aws_efs_file_system.e2b-efs.id
     }))
 
   tag_specifications {
