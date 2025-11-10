@@ -235,18 +235,23 @@ echo '_sbx_ssh() {
 
 alias sbx-ssh=_sbx_ssh' >>/etc/profile
 
-set -xe
+# Install EFS-Util dependencies
+apt update
+apt install -y cargo cmake build-essential pkg-config libssl-dev ca-certificates
 
-# 安装 EFS 工具
-yum install -y amazon-efs-utils
-
-# 创建挂载目录
+# Create mount directory
 mkdir -p /mnt/efs
 
-# 挂载 EFS 文件系统（变量由 Terraform 注入）
+# Install EFS
+git clone https://github.com/aws/efs-utils
+cd efs-utils
+./build-deb.sh
+apt install -y ./build/amazon-efs-utils*deb
+
+# Mount the EFS file system (variables injected by Terraform)
 mount -t efs -o tls ${EFS_ID}:/ /mnt/efs
 
-# 配置开机自动挂载
+# Configure automatic mounting on boot
 echo "${EFS_ID}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
 
 echo "[init-efs] EFS 挂载完成"
