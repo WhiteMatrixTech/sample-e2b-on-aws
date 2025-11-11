@@ -50,19 +50,19 @@ type ServerInterface interface {
 	// (POST /sandboxes)
 	PostSandboxes(c *gin.Context)
 
-	// (GET /sandboxes/metrics)
+	// (GET /v2/sandboxes/metrics)
 	GetSandboxesMetrics(c *gin.Context, params GetSandboxesMetricsParams)
 
 	// (DELETE /sandboxes/{sandboxID})
 	DeleteSandboxesSandboxID(c *gin.Context, sandboxID SandboxID)
 
-	// (GET /sandboxes/{sandboxID})
+	// (GET /v2/sandboxes/{sandboxID})
 	GetSandboxesSandboxID(c *gin.Context, sandboxID SandboxID)
 
-	// (GET /sandboxes/{sandboxID}/logs)
+	// (GET /v2/sandboxes/{sandboxID}/logs)
 	GetSandboxesSandboxIDLogs(c *gin.Context, sandboxID SandboxID, params GetSandboxesSandboxIDLogsParams)
 
-	// (GET /sandboxes/{sandboxID}/metrics)
+	// (GET /v2/sandboxes/{sandboxID}/metrics)
 	GetSandboxesSandboxIDMetrics(c *gin.Context, sandboxID SandboxID)
 
 	// (POST /sandboxes/{sandboxID}/pause)
@@ -80,25 +80,25 @@ type ServerInterface interface {
 	// (GET /teams)
 	GetTeams(c *gin.Context)
 
-	// (GET /v2/templates)
+	// (GET /templates)
 	GetTemplates(c *gin.Context, params GetTemplatesParams)
 
-	// (POST /v2/templates)
+	// (POST /v3/templates)
 	PostTemplates(c *gin.Context)
 
-	// (DELETE /v2/templates/{templateID})
+	// (DELETE /templates/{templateID})
 	DeleteTemplatesTemplateID(c *gin.Context, templateID TemplateID)
 
-	// (PATCH /v2/templates/{templateID})
+	// (PATCH /templates/{templateID})
 	PatchTemplatesTemplateID(c *gin.Context, templateID TemplateID)
 
-	// (POST /v2/templates/{templateID})
+	// (POST /v3/templates/{templateID})
 	PostTemplatesTemplateID(c *gin.Context, templateID TemplateID)
 
-	// (POST /v2/templates/{templateID}/builds/{buildID})
+	// (POST /v3/templates/{templateID}/builds/{buildID})
 	PostTemplatesTemplateIDBuildsBuildID(c *gin.Context, templateID TemplateID, buildID BuildID)
 
-	// (GET /v2/templates/{templateID}/builds/{buildID}/status)
+	// (GET /templates/{templateID}/builds/{buildID}/status)
 	GetTemplatesTemplateIDBuildsBuildIDStatus(c *gin.Context, templateID TemplateID, buildID BuildID, params GetTemplatesTemplateIDBuildsBuildIDStatusParams)
 
 	// (GET /v2/sandboxes)
@@ -991,22 +991,22 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/nodes/:nodeID", wrapper.PostNodesNodeID)
 	router.GET(options.BaseURL+"/sandboxes", wrapper.GetSandboxes)
 	router.POST(options.BaseURL+"/sandboxes", wrapper.PostSandboxes)
-	router.GET(options.BaseURL+"/sandboxes/metrics", wrapper.GetSandboxesMetrics)
+	router.GET(options.BaseURL+"/v2/sandboxes/metrics", wrapper.GetSandboxesMetrics)
 	router.DELETE(options.BaseURL+"/sandboxes/:sandboxID", wrapper.DeleteSandboxesSandboxID)
-	router.GET(options.BaseURL+"/sandboxes/:sandboxID", wrapper.GetSandboxesSandboxID)
-	router.GET(options.BaseURL+"/sandboxes/:sandboxID/logs", wrapper.GetSandboxesSandboxIDLogs)
-	router.GET(options.BaseURL+"/sandboxes/:sandboxID/metrics", wrapper.GetSandboxesSandboxIDMetrics)
+	router.GET(options.BaseURL+"/v2/sandboxes/:sandboxID", wrapper.GetSandboxesSandboxID)
+	router.GET(options.BaseURL+"/v2/sandboxes/:sandboxID/logs", wrapper.GetSandboxesSandboxIDLogs)
+	router.GET(options.BaseURL+"/v2/sandboxes/:sandboxID/metrics", wrapper.GetSandboxesSandboxIDMetrics)
 	router.POST(options.BaseURL+"/sandboxes/:sandboxID/pause", wrapper.PostSandboxesSandboxIDPause)
 	router.POST(options.BaseURL+"/sandboxes/:sandboxID/refreshes", wrapper.PostSandboxesSandboxIDRefreshes)
 	router.POST(options.BaseURL+"/sandboxes/:sandboxID/resume", wrapper.PostSandboxesSandboxIDResume)
 	router.POST(options.BaseURL+"/sandboxes/:sandboxID/timeout", wrapper.PostSandboxesSandboxIDTimeout)
 	router.GET(options.BaseURL+"/teams", wrapper.GetTeams)
-	router.GET(options.BaseURL+"/v2/templates", wrapper.GetTemplates)
-	router.POST(options.BaseURL+"/v2/templates", wrapper.PostTemplates)
-	router.DELETE(options.BaseURL+"/v2/templates/:templateID", wrapper.DeleteTemplatesTemplateID)
-	router.PATCH(options.BaseURL+"/v2/templates/:templateID", wrapper.PatchTemplatesTemplateID)
-	router.POST(options.BaseURL+"/v2/templates/:templateID", wrapper.PostTemplatesTemplateID)
-	router.POST(options.BaseURL+"/v2/templates/:templateID/builds/:buildID", wrapper.PostTemplatesTemplateIDBuildsBuildID)
-	router.GET(options.BaseURL+"/v2/templates/:templateID/builds/:buildID/status", wrapper.GetTemplatesTemplateIDBuildsBuildIDStatus)
+	router.GET(options.BaseURL+"/templates", wrapper.GetTemplates)
+	router.POST(options.BaseURL+"/v3/templates", wrapper.PostTemplates)
+	router.DELETE(options.BaseURL+"/templates/:templateID", wrapper.DeleteTemplatesTemplateID)
+	router.PATCH(options.BaseURL+"/templates/:templateID", wrapper.PatchTemplatesTemplateID)
+	router.POST(options.BaseURL+"/v3/templates/:templateID", wrapper.PostTemplatesTemplateID)
+	router.POST(options.BaseURL+"/v3/templates/:templateID/builds/:buildID", wrapper.PostTemplatesTemplateIDBuildsBuildID)
+	router.GET(options.BaseURL+"/templates/:templateID/builds/:buildID/status", wrapper.GetTemplatesTemplateIDBuildsBuildIDStatus)
 	router.GET(options.BaseURL+"/v2/sandboxes", wrapper.GetV2Sandboxes)
 }

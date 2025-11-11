@@ -73,8 +73,8 @@ func NewGinServer(ctx context.Context, tel *telemetry.Client, logger *zap.Logger
 			tracingMiddleware.Middleware(tel.TracerProvider, serviceName),
 			"/health",
 			"/sandboxes/:sandboxID/refreshes",
-			"/v2/templates/:templateID/builds/:buildID/logs",
-			"/v2/templates/:templateID/builds/:buildID/status",
+			"/templates/:templateID/builds/:buildID/logs",
+			"/templates/:templateID/builds/:buildID/status",
 		),
 		customMiddleware.IncludeRoutes(
 			metricsMiddleware.Middleware(tel.MeterProvider, serviceName),
@@ -162,8 +162,8 @@ func NewGinServer(ctx context.Context, tel *telemetry.Client, logger *zap.Logger
 			},
 			"/health",
 			"/sandboxes/:sandboxID/refreshes",
-			"/v2/templates/:templateID/builds/:buildID/logs",
-			"/v2/templates/:templateID/builds/:buildID/status",
+			"/templates/:templateID/builds/:buildID/logs",
+			"/templates/:templateID/builds/:buildID/status",
 		),
 	)
 

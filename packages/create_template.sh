@@ -73,10 +73,10 @@ else
 fi
 
 # Make the POST request
-echo "Making POST request to https://api.$CFNDOMAIN/v2/templates with token $ACCESS_TOKEN"
+echo "Making POST request to https://api.$CFNDOMAIN/v3/templates with token $ACCESS_TOKEN"
 
 RESPONSE=$(curl -s -X POST \
- "https://api.$CFNDOMAIN/v2/templates" \
+ "https://api.$CFNDOMAIN/v3/templates" \
  -H "Authorization: $ACCESS_TOKEN" \
  -H 'Content-Type: application/json' \
  -d "{
@@ -197,7 +197,7 @@ echo "Base image: $BASE_ECR_REPOSITORY"
 # Notify the API that the build is complete
 echo "Notifying API that the build is complete..."
 BUILD_COMPLETE_RESPONSE=$(curl -s -X POST \
-  "https://api.$CFNDOMAIN/v2/templates/$TEMPLATE_ID/builds/$BUILD_ID" \
+  "https://api.$CFNDOMAIN/v3/templates/$TEMPLATE_ID/builds/$BUILD_ID" \
   -H "Authorization: $ACCESS_TOKEN" \
   -H 'Content-Type: application/json')
 
@@ -208,7 +208,7 @@ echo "$BUILD_COMPLETE_RESPONSE"
 echo "Polling build status every 10 seconds until completion..."
 while true; do
     FINAL_BUILD_STATUS_RESPONSE=$(curl -s \
-      "https://api.$CFNDOMAIN/v2/templates/$TEMPLATE_ID/builds/$BUILD_ID/status" \
+      "https://api.$CFNDOMAIN/templates/$TEMPLATE_ID/builds/$BUILD_ID/status" \
       -H "Authorization: $ACCESS_TOKEN")
     
     # Extract status value
