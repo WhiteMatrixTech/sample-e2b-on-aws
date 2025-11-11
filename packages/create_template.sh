@@ -73,10 +73,10 @@ else
 fi
 
 # Make the POST request
-echo "Making POST request to https://api.$CFNDOMAIN/v3/templates with token $ACCESS_TOKEN"
+echo "Making POST request to https://api.$CFNDOMAIN/templates with token $ACCESS_TOKEN"
 
 RESPONSE=$(curl -s -X POST \
- "https://api.$CFNDOMAIN/v3/templates" \
+ "https://api.$CFNDOMAIN/templates" \
  -H "Authorization: $ACCESS_TOKEN" \
  -H 'Content-Type: application/json' \
  -d "{
@@ -197,7 +197,7 @@ echo "Base image: $BASE_ECR_REPOSITORY"
 # Notify the API that the build is complete
 echo "Notifying API that the build is complete..."
 BUILD_COMPLETE_RESPONSE=$(curl -s -X POST \
-  "https://api.$CFNDOMAIN/v3/templates/$TEMPLATE_ID/builds/$BUILD_ID" \
+  "https://api.$CFNDOMAIN/templates/$TEMPLATE_ID/builds/$BUILD_ID" \
   -H "Authorization: $ACCESS_TOKEN" \
   -H 'Content-Type: application/json')
 
