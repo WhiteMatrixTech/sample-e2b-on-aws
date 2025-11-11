@@ -59,7 +59,7 @@ locals {
     }
     # Client nodes run workloads and containers
     client = {
-      instance_type_x86    = "c5.2xlarge"
+      instance_type_x86    = "c5.metal"
       instance_type_arm    = "c7g.metal"
       desired_capacity = 1
       max_size         = 5
