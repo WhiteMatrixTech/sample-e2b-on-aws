@@ -256,5 +256,6 @@ echo "${EFS_ID}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
 
 echo "[init-efs] EFS 挂载完成"
 
-fallocate -l 100G /mnt/efs/sandbox/data.ext4
+mkdir -p /mnt/efs/sandbox
+truncate -s 100G /mnt/efs/sandbox/data.ext4
 mkfs.ext4 -F -L data_vol /mnt/efs/sandbox/data.ext4
