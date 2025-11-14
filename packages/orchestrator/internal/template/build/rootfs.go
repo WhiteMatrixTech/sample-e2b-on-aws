@@ -156,8 +156,8 @@ func (r *Rootfs) createExt4Filesystem(ctx context.Context, tracer trace.Tracer, 
 }
 
 func additionalOCILayers(
-	ctx context.Context,
-	config *TemplateConfig,
+    ctx context.Context,
+    config *TemplateConfig,
 ) ([]containerregistry.Layer, error) {
 	var scriptDef bytes.Buffer
 	err := ProvisionScriptTemplate.Execute(&scriptDef, struct {
@@ -268,6 +268,102 @@ echo "System Init"`), 0o777},
 ::shutdown:/usr/bin/busybox swapoff -a
 ::shutdown:/usr/bin/busybox umount -a -r -v
 `, logExternalPrefix)), 0o777},
+
+			// EFS/NFS mount helper: read MMDS and mount /home/user
+			"usr/local/bin/efs-mount.sh": {[]byte(`#!/bin/bash
+set -euo pipefail
+
+log() { echo "[efs-mount] $1"; }
+warn() { echo "[efs-mount][warn] $1"; }
+err() { echo "[efs-mount][error] $1"; }
+
+# MMDS address
+MMDS_URL="http://169.254.170.2/"
+
+USER_ID=""
+EFS_HOST=""
+EFS_ROOT=""
+
+if command -v curl >/dev/null 2>&1; then
+  # MMDS v2 requires a token
+  TOKEN=$(curl -fsS -m 2 -X PUT -H "X-metadata-token-ttl-seconds: 30" "$MMDS_URL/latest/api/token" 2>/dev/null || true)
+  if [ -z "$TOKEN" ]; then
+    warn "MMDS token not available; skipping"
+    exit 0
+  fi
+  if METADATA_JSON=$(curl -fsS -m 2 -H "X-metadata-token: $TOKEN" -H "Accept: application/json" "$MMDS_URL" 2>/dev/null); then
+    if command -v jq >/dev/null 2>&1; then
+      USER_ID=$(echo "$METADATA_JSON" | jq -r '.userID // empty')
+      EFS_HOST=$(echo "$METADATA_JSON" | jq -r '.efsHost // empty')
+      EFS_ROOT=$(echo "$METADATA_JSON" | jq -r '.efsRoot // ""')
+    else
+      # crude parsing fallback
+      USER_ID=$(echo "$METADATA_JSON" | sed -n 's/.*"userID"\s*:\s*"\([^"]*\)".*/\1/p')
+      EFS_HOST=$(echo "$METADATA_JSON" | sed -n 's/.*"efsHost"\s*:\s*"\([^"]*\)".*/\1/p')
+      EFS_ROOT=$(echo "$METADATA_JSON" | sed -n 's/.*"efsRoot"\s*:\s*"\([^"]*\)".*/\1/p')
+    fi
+  else
+    warn "MMDS not reachable; skipping EFS mount"
+    exit 0
+  fi
+else
+  warn "curl not found; skipping EFS mount"
+  exit 0
+fi
+
+if [ -z "$USER_ID" ]; then
+  warn "userID missing in MMDS; skipping"
+  exit 0
+fi
+
+if [ -z "$EFS_HOST" ]; then
+  warn "efsHost missing; skipping"
+  exit 0
+fi
+
+TARGET="/home/user"
+SRC_PATH="$EFS_HOST:${EFS_ROOT}/${USER_ID}"
+
+mkdir -p "$TARGET"
+
+# Prefer NFSv4 mount which works for EFS and standard NFS
+MOUNT_OPTS="nfsvers=4.1,noresvport"
+if mountpoint -q "$TARGET"; then
+  log "target already mounted"
+  exit 0
+fi
+
+if mount -t nfs4 -o "$MOUNT_OPTS" "$SRC_PATH" "$TARGET"; then
+  log "mounted $SRC_PATH to $TARGET"
+else
+  warn "failed NFS4 mount, trying legacy nfs"
+  if mount -t nfs -o "$MOUNT_OPTS" "$SRC_PATH" "$TARGET"; then
+    log "mounted (nfs) $SRC_PATH to $TARGET"
+  else
+    err "mount failed for $SRC_PATH"
+    exit 0
+  fi
+fi
+
+# Best-effort ownership to 'user'
+if id -u user >/dev/null 2>&1; then
+  chown -R user:user "$TARGET" || true
+fi
+`), 0o755},
+
+			"etc/systemd/system/efs-mount.service": {[]byte(`[Unit]
+Description=EFS/NFS mount for /home/user
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/efs-mount.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+`), 0o644},
 		},
 	)
 	if err != nil {
@@ -280,6 +376,8 @@ echo "System Init"`), 0o777},
 			"etc/systemd/system/multi-user.target.wants/envd.service": "etc/systemd/system/envd.service",
 			// Enable chrony service autostart
 			"etc/systemd/system/multi-user.target.wants/chrony.service": "etc/systemd/system/chrony.service",
+			// Enable EFS/NFS mount service at boot
+			"etc/systemd/system/multi-user.target.wants/efs-mount.service": "etc/systemd/system/efs-mount.service",
 		},
 	)
 	if err != nil {

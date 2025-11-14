@@ -181,6 +181,16 @@ func CreateSandbox(
 		config.RamMb,
 		config.HugePages,
 		processOptions,
+		&fc.MmdsMetadata{
+			SandboxId:            config.SandboxId,
+			TemplateId:           config.TemplateId,
+			LogsCollectorAddress: os.Getenv("LOGS_COLLECTOR_PUBLIC_IP"),
+			TraceId:              "",
+			TeamId:               config.TeamId,
+			UserId:               config.Metadata["userId"],
+			EfsHost:              config.Metadata["efsHost"],
+			EfsRoot:              config.Metadata["efsRoot"],
+		},
 	)
 	if err != nil {
 		return nil, cleanup, fmt.Errorf("failed to create FC: %w", err)
@@ -363,6 +373,9 @@ func ResumeSandbox(
 			LogsCollectorAddress: os.Getenv("LOGS_COLLECTOR_PUBLIC_IP"),
 			TraceId:              traceID,
 			TeamId:               config.TeamId,
+			UserId:               config.Metadata["userId"],
+			EfsHost:              config.Metadata["efsHost"],
+			EfsRoot:              config.Metadata["efsRoot"],
 		},
 		fcUffdPath,
 		snapfile,

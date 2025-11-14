@@ -234,15 +234,16 @@ func (p *Process) configure(
 }
 
 func (p *Process) Create(
-	ctx context.Context,
-	tracer trace.Tracer,
-	sandboxID string,
-	templateID string,
-	teamID string,
-	vCPUCount int64,
-	memoryMB int64,
-	hugePages bool,
-	options ProcessOptions,
+    ctx context.Context,
+    tracer trace.Tracer,
+    sandboxID string,
+    templateID string,
+    teamID string,
+    vCPUCount int64,
+    memoryMB int64,
+    hugePages bool,
+    options ProcessOptions,
+    mmdsMetadata *MmdsMetadata,
 ) error {
 	childCtx, childSpan := tracer.Start(ctx, "create-fc")
 	defer childSpan.End()
@@ -328,6 +329,16 @@ func (p *Process) Create(
 		return errors.Join(fmt.Errorf("error setting fc network config: %w", err), fcStopErr)
 	}
 	telemetry.ReportEvent(childCtx, "set fc network config")
+
+	// Provide MMDS metadata before boot so guest can read it during startup
+	if mmdsMetadata != nil {
+		err = p.client.setMmds(childCtx, mmdsMetadata)
+		if err != nil {
+			fcStopErr := p.Stop()
+
+			return errors.Join(fmt.Errorf("error setting mmds: %w", err), fcStopErr)
+		}
+	}
 
 	err = p.client.setMachineConfig(childCtx, vCPUCount, memoryMB, hugePages)
 	if err != nil {
