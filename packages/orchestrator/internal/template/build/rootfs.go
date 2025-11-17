@@ -156,8 +156,8 @@ func (r *Rootfs) createExt4Filesystem(ctx context.Context, tracer trace.Tracer, 
 }
 
 func additionalOCILayers(
-    ctx context.Context,
-    config *TemplateConfig,
+	ctx context.Context,
+	config *TemplateConfig,
 ) ([]containerregistry.Layer, error) {
 	var scriptDef bytes.Buffer
 	err := ProvisionScriptTemplate.Execute(&scriptDef, struct {
@@ -278,7 +278,7 @@ warn() { echo "[efs-mount][warn] $1"; }
 err() { echo "[efs-mount][error] $1"; }
 
 # MMDS address
-MMDS_URL="http://169.254.170.2/"
+MMDS_URL="http://169.254.169.254/"
 
 USER_ID=""
 EFS_HOST=""
