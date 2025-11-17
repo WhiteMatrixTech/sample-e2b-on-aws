@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -170,6 +171,7 @@ func CreateSandbox(
 	}
 
 	telemetry.ReportEvent(childCtx, "created fc client")
+	log.Printf("created fc client for sandbox %s with config %+v", config.SandboxId, config.Metadata)
 
 	err = fcHandle.Create(
 		childCtx,
