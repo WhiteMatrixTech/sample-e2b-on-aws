@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"log"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -38,8 +38,9 @@ func (a *APIStore) startSandbox(
 
 	// Unique ID for the execution (from start/resume to stop/pause)
 	executionID := uuid.New().String()
-	log.Printf("startSandbox at sandbox: sandboxID=%s, executionID=%s, alias=%s, team=%s, build=%s, metadata=%+v, envVars=%+v, startTime=%s, endTime=%s, timeout=%s, isResume=%v, clientID=%s, baseTemplateID=%s, autoPause=%v, envdAccessToken=%s",
-		sandboxID, executionID, alias, team.Team.Name, build.EnvID, metadata, envVars, startTime.Format("2006-01-02 15:04:05 -07:00"), endTime.Format("2006-01-02 15:04:05 -07:00"), timeout.String(), isResume, clientID, baseTemplateID, autoPause, envdAccessToken)
+	metadataJson, _ := json.Marshal(metadata)
+	zap.L().Info("startSandbox at sandbox", zap.String("metadata", string(metadataJson)))
+
 	sandbox, instanceErr := a.orchestrator.CreateSandbox(
 		ctx,
 		sandboxID,

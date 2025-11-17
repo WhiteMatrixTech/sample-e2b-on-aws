@@ -6,8 +6,8 @@ package sandbox
 import (
 	"context"
 	"errors"
+	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -171,7 +171,8 @@ func CreateSandbox(
 	}
 
 	telemetry.ReportEvent(childCtx, "created fc client")
-	log.Printf("created fc client for sandbox %s with config %+v", config.SandboxId, config.Metadata)
+	metadataJson, _ := json.Marshal(config.Metadata)
+	zap.L().Info("created fc client for sandbox", zap.String("sandboxID", config.SandboxId), zap.String("metadata", string(metadataJson)))
 
 	err = fcHandle.Create(
 		childCtx,
