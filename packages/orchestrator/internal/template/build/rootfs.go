@@ -292,6 +292,10 @@ if command -v curl >/dev/null 2>&1; then
     exit 0
   fi
   if METADATA_JSON=$(curl -fsS -m 2 -H "X-metadata-token: $TOKEN" -H "Accept: application/json" "$MMDS_URL" 2>/dev/null); then
+    # Persist raw metadata for debugging/verification
+    mkdir -p "/home/user"
+    printf "%s\n" "$METADATA_JSON" > "/home/user/metadata.json" || true
+
     if command -v jq >/dev/null 2>&1; then
       USER_ID=$(echo "$METADATA_JSON" | jq -r '.userID // empty')
       EFS_HOST=$(echo "$METADATA_JSON" | jq -r '.efsHost // empty')
@@ -328,6 +332,23 @@ mkdir -p "$TARGET"
 
 # Prefer NFSv4 mount which works for EFS and standard NFS
 MOUNT_OPTS="nfsvers=4.1,noresvport"
+
+# Ensure remote subdirectory exists by mounting EFS root temporarily
+ROOT="${EFS_ROOT:-/}"
+TMP="/mnt/efs"
+SRC_ROOT="$EFS_HOST:${ROOT}"
+mkdir -p "$TMP"
+if ! mountpoint -q "$TMP"; then
+  if ! mount -t nfs4 -o "$MOUNT_OPTS" "$SRC_ROOT" "$TMP"; then
+    warn "failed to mount EFS root via nfs4; trying nfs"
+    mount -t nfs -o "$MOUNT_OPTS" "$SRC_ROOT" "$TMP" || true
+  fi
+fi
+if mountpoint -q "$TMP"; then
+  mkdir -p "$TMP/${USER_ID}" || true
+  umount "$TMP" || true
+fi
+
 if mountpoint -q "$TARGET"; then
   log "target already mounted"
   exit 0
