@@ -5,8 +5,8 @@ package sandbox
 
 import (
 	"context"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -367,6 +367,8 @@ func ResumeSandbox(
 	if err != nil {
 		return nil, cleanup, fmt.Errorf("failed to get snapfile: %w", err)
 	}
+	metadataJson, _ := json.Marshal(config.Metadata)
+	zap.L().Info("Resume fc client for sandbox", zap.String("sandboxID", config.SandboxId), zap.String("metadata", string(metadataJson)))
 	fcStartErr := fcHandle.Resume(
 		uffdStartCtx,
 		tracer,

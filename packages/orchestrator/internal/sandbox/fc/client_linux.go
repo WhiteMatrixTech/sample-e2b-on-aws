@@ -5,11 +5,13 @@ package fc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"runtime"
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	"github.com/go-openapi/strfmt"
+	"go.uber.org/zap"
 
 	"github.com/e2b-dev/infra/packages/orchestrator/internal/sandbox/socket"
 	"github.com/e2b-dev/infra/packages/orchestrator/internal/sandbox/template"
@@ -133,6 +135,9 @@ func (c *apiClient) createSnapshot(
 }
 
 func (c *apiClient) setMmds(ctx context.Context, metadata *MmdsMetadata) error {
+	mmdsJson, _ := json.Marshal(metadata)
+	zap.L().Info("setMmds at fc client", zap.String("metadata", string(mmdsJson)))
+
 	mmdsConfig := operations.PutMmdsParams{
 		Context: ctx,
 		Body:    metadata,
