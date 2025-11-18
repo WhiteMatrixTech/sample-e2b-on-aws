@@ -21,6 +21,9 @@ type opts struct {
 	EnvID      string `json:"envID"`
 	Address    string `json:"address"`
 	TeamID     string `json:"teamID"`
+	UserID     string `json:"userID,omitempty"`
+	EfsHost    string `json:"efsHost,omitempty"`
+	EfsRoot    string `json:"efsRoot,omitempty"`
 }
 
 func (opts *opts) addOptsToJSON(jsonLogs []byte) ([]byte, error) {
@@ -35,6 +38,9 @@ func (opts *opts) addOptsToJSON(jsonLogs []byte) ([]byte, error) {
 	parsed["envID"] = opts.EnvID
 	parsed["traceID"] = opts.TraceID
 	parsed["teamID"] = opts.TeamID
+	parsed["userID"] = opts.UserID
+	parsed["efsHost"] = opts.EfsHost
+	parsed["efsRoot"] = opts.EfsRoot
 
 	data, err := json.Marshal(parsed)
 
