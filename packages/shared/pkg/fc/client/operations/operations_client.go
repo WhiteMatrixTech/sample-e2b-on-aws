@@ -6,8 +6,11 @@ package operations
 // Editing this file might prove futile when you re-run the swagger generate command
 
 import (
+	"encoding/json"
+
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+	"go.uber.org/zap"
 )
 
 // New creates a new operations API client.
@@ -1132,6 +1135,10 @@ func (a *Client) PutMmds(params *PutMmdsParams, opts ...ClientOption) (*PutMmdsN
 	if params == nil {
 		params = NewPutMmdsParams()
 	}
+	// TODO: Validate the params before sending
+	mmdsJson, _ := json.Marshal(params.Body)
+	zap.L().Info("PutMmds at fc client", zap.String("mmds", string(mmdsJson)))
+		
 	op := &runtime.ClientOperation{
 		ID:                 "putMmds",
 		Method:             "PUT",
