@@ -242,6 +242,8 @@ func (fw *Firewall) ResetAllowedCustom() error {
 		initIps = append(initIps, ip)
 	}
 
+	initIps = append(initIps, "169.254.169.253/32")
+
 	initData, err := set.AddressStringsToSetData(initIps)
 	if err != nil {
 		return fmt.Errorf("parse initial allow CIDRs: %w", err)

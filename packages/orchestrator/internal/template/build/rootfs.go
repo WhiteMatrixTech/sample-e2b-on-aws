@@ -226,7 +226,7 @@ BUILD_ID=%s
 			// Setup system
 			"etc/hostname":    {[]byte(hostname), 0o644},
 			"etc/hosts":       {[]byte(hosts), 0o644},
-			"etc/resolv.conf": {[]byte("nameserver 8.8.8.8"), 0o644},
+			"etc/resolv.conf": {[]byte("nameserver 169.254.169.253\nnameserver 8.8.8.8\noptions timeout:2 attempts:2 ndots:2\n"), 0o644},
 
 			".e2b":                            {[]byte(e2bFile), 0o644},
 			storage.GuestEnvdPath:             {envdFileData, 0o777},
