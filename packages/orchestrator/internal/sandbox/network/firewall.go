@@ -1,16 +1,18 @@
 package network
 
 import (
-	"fmt"
-	"net/netip"
-	"os"
-	"strings"
+    "encoding/binary"
+    "fmt"
+    "net/netip"
+    "os"
+    "strings"
 
-	"github.com/google/nftables"
-	"github.com/google/nftables/expr"
-	"github.com/ngrok/firewall_toolkit/pkg/expressions"
-	"github.com/ngrok/firewall_toolkit/pkg/rule"
-	"github.com/ngrok/firewall_toolkit/pkg/set"
+    "github.com/google/nftables"
+    "github.com/google/nftables/expr"
+    "github.com/ngrok/firewall_toolkit/pkg/expressions"
+    "github.com/ngrok/firewall_toolkit/pkg/rule"
+    "github.com/ngrok/firewall_toolkit/pkg/set"
+    "golang.org/x/sys/unix"
 )
 
 const (
@@ -119,15 +121,34 @@ func (fw *Firewall) installRules() error {
 		),
 	})
 
-	// Allow anything in allowSet
-	fw.conn.InsertRule(&nftables.Rule{
-		Table: fw.table, Chain: fw.chain,
-		Exprs: append(ifaceMatch,
-			expressions.IPv4DestinationAddress(1),
-			expressions.IPSetLookUp(fw.allowSet.Set(), 1),
-			expressions.Accept(),
-		),
-	})
+    // Allow anything in allowSet
+    fw.conn.InsertRule(&nftables.Rule{
+        Table: fw.table, Chain: fw.chain,
+        Exprs: append(ifaceMatch,
+            expressions.IPv4DestinationAddress(1),
+            expressions.IPSetLookUp(fw.allowSet.Set(), 1),
+            expressions.Accept(),
+        ),
+    })
+
+    // Allow TCP destination port 2049 (NFSv4) on tap interface
+    {
+        dport := make([]byte, 2)
+        binary.BigEndian.PutUint16(dport, 2049)
+
+        fw.conn.InsertRule(&nftables.Rule{
+            Table: fw.table, Chain: fw.chain,
+            Exprs: append(ifaceMatch,
+                // Match L4 protocol TCP
+                &expr.Meta{Key: expr.MetaKeyL4PROTO, Register: 1},
+                &expr.Cmp{Register: 1, Op: expr.CmpOpEq, Data: []byte{unix.IPPROTO_TCP}},
+                // Load TCP destination port into register 1
+                &expr.Payload{DestRegister: 1, Base: expr.PayloadBaseTransportHeader, Offset: 2, Len: 2},
+                &expr.Cmp{Register: 1, Op: expr.CmpOpEq, Data: dport},
+                expressions.Accept(),
+            ),
+        })
+    }
 
 	// Drop anything in blockSet
 	fw.conn.AddRule(&nftables.Rule{
